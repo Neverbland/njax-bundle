@@ -1,0 +1,28 @@
+<?xml version="1.0" ?>
+
+<container xmlns="http://symfony.com/schema/dic/services"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+
+    <services>        
+        <service id="njax" class="Neverbland\Bundle\NjaxBundle\Njax" scope="request">
+            <argument type="service" id="request" />
+            <argument type="service" id="templating.engine.twig" />
+            <argument>%kernel.environment%</argument>
+            <argument>%kernel.bundles%</argument>
+        </service>
+
+        <service id="kernel.listener.njax" class="Neverbland\Bundle\NjaxBundle\EventListener\NjaxListener">
+            <tag name="kernel.event_listener" event="kernel.controller" method="onKernelController" />
+            <tag name="kernel.event_listener" event="kernel.view" method="onKernelView" priority="10" />
+            <tag name="kernel.event_listener" event="kernel.response" method="onKernelResponse" priority="-255" />
+            <argument type="service" id="service_container" />
+        </service>
+
+        <service id="twig.extension.njax_globals" class="Neverbland\Bundle\NjaxBundle\Twig\Extension\NjaxGlobals">
+            <tag name="twig.extension" />
+            <argument type="service" id="service_container" />
+        </service>
+    </services>
+
+</container>

@@ -1,0 +1,22 @@
+{
+    "name": "neverbland/njax-bundle",
+    "description": "NJAX - Navigation in AJAX. Integration with Symfony2",
+    "keywords": ["ajax", "navigation", "pjax", "symfony"],
+    "homepage": "http://www.neverbland.com",
+    "authors": [
+        {
+            "name": "Michał Dudek",
+            "url": "http://www.michaldudek.pl/"
+        }
+    ],
+    "maintainers": [
+        {
+            "name": "Michał Dudek",
+            "url": "http://www.michaldudek.pl/"
+        }
+    ],
+    "target-dir": "Neverbland/Bundle/NjaxBundle",
+    "autoload": {
+        "psr-0": { "Neverbland\\Bundle\\NjaxBundle": "" }
+    }
+}
