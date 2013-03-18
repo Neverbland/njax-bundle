@@ -1065,6 +1065,8 @@
             return true;
         }
 
+        options = options || {};
+
         // read options from data-njax attribute
         var opt = $el.data('njax') || {},
             url = $el.attr('href') || false,
