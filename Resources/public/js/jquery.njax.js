@@ -811,14 +811,15 @@
         title = $.trim(title).length ? title : null;
         data = data || {};
 
-        history.pushState($.extend(true, {}, {
+        var newState = $.extend(true, {}, {
             id : createId(),
             scrollTop : $win.scrollTop(),
             url : url
-        }, data), title, url);
+        }, data);
 
-        currentState = getState();
-        
+        history.pushState(newState, title, url);
+
+        currentState = newState;
         return currentState;
     },
 
@@ -828,22 +829,15 @@
      * @param  {Object} data [optional] Any additional state data.
      */
     storeCurrentState = function(data) {
-        history.replaceState($.extend(true, {}, currentState, {
+        var newState = $.extend(true, {}, currentState, {
             id : currentState.id || createId(),
             scrollTop : $win.scrollTop(),
             url : window.location.pathname
-        }, data), currentState.title);
+        }, data);
 
-        currentState = getState();
-    },
+        history.replaceState(newState, currentState.title);
 
-    /**
-     * Returns the current state from history.
-     * 
-     * @return {Object}
-     */
-    getState = function() {
-        return history.state;
+        currentState = newState;
     },
 
     /**
