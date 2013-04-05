@@ -832,7 +832,7 @@
         var newState = $.extend(true, {}, currentState, {
             id : currentState.id || createId(),
             scrollTop : $win.scrollTop(),
-            url : window.location.pathname
+            url : window.location.pathname + window.location.search
         }, data);
 
         history.replaceState(newState, currentState.title);
