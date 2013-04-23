@@ -989,36 +989,6 @@
     };
 
     /***********************************************
-     * INITIALIZE
-     ***********************************************/
-    // set the state for the current (initial) page load
-    storeCurrentState();
-
-    // get initially loaded CSS files
-    $('link[rel="stylesheet"]').each(function() {
-        var $tag = $(this),
-            url = $tag.attr('href');
-
-        if (url) {
-            loadedCss[url] = $tag;
-        }
-    });
-
-    // get initially loaded JavaScript files
-    $('script[src]').each(function() {
-        var $tag = $(this),
-            url = $tag.attr('src');
-
-        if (url) {
-            loadedJavaScript[url] = {
-                url : url,
-                local : isLocalUrl(url),
-                tag : $tag
-            };
-        }
-    });
-
-    /***********************************************
      * ADD TO JQUERY
      ***********************************************/
     // register as a jQuery function
@@ -1106,11 +1076,41 @@
     );
 
     /***********************************************
-     * REGISTER LISTENERS
+     * INITIALIZE
      ***********************************************/
     // but only if njax is supported
     if (supported) {
 
+        // set the state for the current (initial) page load
+        storeCurrentState();
+
+        // get initially loaded CSS files
+        $('link[rel="stylesheet"]').each(function() {
+            var $tag = $(this),
+                url = $tag.attr('href');
+
+            if (url) {
+                loadedCss[url] = $tag;
+            }
+        });
+
+        // get initially loaded JavaScript files
+        $('script[src]').each(function() {
+            var $tag = $(this),
+                url = $tag.attr('src');
+
+            if (url) {
+                loadedJavaScript[url] = {
+                    url : url,
+                    local : isLocalUrl(url),
+                    tag : $tag
+                };
+            }
+        });
+
+        /***********************************************
+         * REGISTER LISTENERS
+         ***********************************************/
         /**
          * Register click listener for anchor elements with data-njax attribute.
          */
