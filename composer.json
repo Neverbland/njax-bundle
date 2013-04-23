@@ -1,6 +1,5 @@
 {
     "name": "neverbland/njax-bundle",
-    "version": "dev",
     "description": "NJAX - Navigation in AJAX. Integration with Symfony2",
     "keywords": ["ajax", "navigation", "pjax", "symfony"],
     "homepage": "http://www.neverbland.com",
