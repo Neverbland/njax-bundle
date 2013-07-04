@@ -513,7 +513,12 @@
                 // push new state
                 if (options.pushState) {
                     pushState(response.url, response.title, {
-                        target : target
+                        target : target,
+                        // cloning options manually because only serializable options can be stored in state (no functions)
+                        options : {
+                            partial : options.partial,
+                            fragment : options.fragment
+                        }
                     });
                 }
 
@@ -601,7 +606,12 @@
                 // push new state
                 if (options.pushState) {
                     pushState(url, options.title, {
-                        target : target
+                        target : target,
+                        // cloning options manually because only serializable options can be stored in state (no functions)
+                        options : {
+                            partial : options.partial,
+                            fragment : options.fragment
+                        }
                     });
                 }
 
@@ -953,6 +963,20 @@
     },
 
     /**
+     * Returns a partial for the given target. Helps with proper history navigation.
+     *
+     * Should be overwritten by user.
+     *
+     * By default it returns the default partial.
+     * 
+     * @param  {String} target Target for which a request is being made.
+     * @return {String}
+     */
+    partialForTarget = function(target) {
+        return $.njax.defaults.partial;
+    },
+
+    /**
      * Selects all elements matching the selector.
      *
      * It not only does .find() but also .filter().
@@ -1063,6 +1087,7 @@
     $.njax.isNjaxEvent = isNjaxEvent;
     $.njax.reload = reload;
     $.njax.refresh = reload;
+    $.njax.partialForTarget = partialForTarget;
 
     // custom global state, either an object or a function, for client implementation
     $.njax.globalState = {};
@@ -1131,9 +1156,10 @@
 
             var newState = ev.originalEvent.state,
                 direction = parseInt(currentState.id, 10) <= parseInt(newState.id, 10) ? 'forward' : 'back',
-                $target = $(newState.target).eq(0);
+                target = direction === 'back' ? newState.target : currentState.target,
+                $target = $(target).eq(0);
 
-            // if there is no such target on page then to a normal page load
+            // if there is no such target on page then do a normal page load
             if (!supported || !$target.length) {
                 window.location = newState.url;
                 return false;
@@ -1147,8 +1173,9 @@
             currentState = newState;
 
             // make njax request for this page
-            request(newState.url, newState.target, {
+            request(newState.url, target, {
                 pushState : false,
+                partial : $.njax.partialForTarget(target),
                 success : function() {
                     // also update scroll position like a browser would - restore on back, top on forward
                     $win.scrollTop(direction === 'back' ? newState.scrollTop : 0);
