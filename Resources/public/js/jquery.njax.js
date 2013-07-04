@@ -907,7 +907,7 @@
         }
         
         // ignore empty hash "foo.html#"
-        if (link.href === window.location.href + '#') {
+        if (link.href === '#' || link.href === window.location.href + '#') {
             return false;
         }
 
