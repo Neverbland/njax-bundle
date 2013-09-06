@@ -432,7 +432,7 @@
                  */
                 if (options.format === 'html') {
                     // HTML response
-                    response.$content = $(data);
+                    response.$content = $($.trim(data));
 
                     // parse the added CSS files
                     selectAll(response.$content, 'link[rel="stylesheet"]').each(function() {
@@ -468,7 +468,7 @@
                 
                 } else {
                     // JSON response
-                    response.$content = $(data.content);
+                    response.$content = $($.trim(data.content));
                     response.js = data.js || [];
                     response.css = data.css || [];
                 }
