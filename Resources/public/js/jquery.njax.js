@@ -828,6 +828,8 @@
         }, data);
 
         history.pushState(newState, title, url);
+        // set document title explicitly as pushState no longer does that in new browsers
+        document.title = title;
 
         currentState = newState;
         return currentState;
@@ -846,6 +848,8 @@
         }, data);
 
         history.replaceState(newState, currentState.title);
+        // set document title explicitly as replaceState no longer does that in new browsers
+        document.title = currentState.title;
 
         currentState = newState;
     },
