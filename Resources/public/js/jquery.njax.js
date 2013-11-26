@@ -824,7 +824,8 @@
         var newState = $.extend(true, {}, {
             id : createId(),
             scrollTop : $win.scrollTop(),
-            url : url
+            url : url,
+            title : title
         }, data);
 
         history.pushState(newState, title, url);
