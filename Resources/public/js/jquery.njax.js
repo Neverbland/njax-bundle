@@ -547,13 +547,20 @@
                 // load the attached CSS files
                 loadCss(response.css);
 
+                var onSucess=function(){
+                    // trigger success event
+                    trigger($target, 'njax:success', [response, data, url, options, xhr, status], options.success);
+                };
+
                 // unload previous modules
                 // and load the attached JS files
                 if (!options.noScripts) {
                     unloadJavaScriptModules();
-                    loadJavaScript(response.js);
+                    loadJavaScript(response.js,onSucess);
+                }else{
+                    onSucess();
                 }
-                
+
 
                 // track the pageview in Google Analytics
                 if (window._gaq !== undefined) {
@@ -564,9 +571,6 @@
                 if (options.scrollToTarget) {
                     animateIntoView($target, options.scrollSpeed, options.scrollToTarget);
                 }
-
-                // trigger success event
-                trigger($target, 'njax:success', [response, data, url, options, xhr, status], options.success);
 
                 // store this request params so we will be able to reload the page using njax
                 last = {
@@ -672,8 +676,9 @@
      * 
      * @param  {Array} files Array of JavaScript files.
      */
-    loadJavaScript = function(files) {
+    loadJavaScript = function(files,fn) {
         var queue = [],
+            enqueued=false,
             execute = function(url, code) {
                 // execute this code only if it is first in the queue (FIFO)
                 if ($.inArray(url, queue) === 0) {
@@ -702,6 +707,9 @@
                     setTimeout(function() {
                         execute(url, code);
                     }, 50);
+                }
+                if (!queue.length){ //empty queue means that we've finished
+                    fn.apply(this);
                 }
             };
 
@@ -742,6 +750,7 @@
                 return true; // continue
             }
 
+            enqueued=true;
             // parse files that haven't been loaded yet
             queue.push(js.url);
             $.ajax({
@@ -755,6 +764,10 @@
                 }
             });
         });
+
+        if (!enqueued){ //no jobs was enqueued, we are done here
+            fn.apply(this);
+        }
     },
 
     /**
