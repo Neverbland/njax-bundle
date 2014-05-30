@@ -525,6 +525,8 @@
                 /*
                  * INSERT CONTENT
                  */
+                unloadJavaScriptModules();
+                
                 if (options.insert === 'append') {
                     // append to target
                     $target.append(response.$content);
@@ -555,7 +557,6 @@
                 // unload previous modules
                 // and load the attached JS files
                 if (!options.noScripts) {
-                    unloadJavaScriptModules();
                     loadJavaScript(response.js,onSucess);
                 }else{
                     onSucess();
