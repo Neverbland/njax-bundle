@@ -723,16 +723,14 @@
                     return true; // continue
                 }
 
-                // load it by simply adding a script tag to the page
-                var $tag = $('<script />', {
-                    src : js.url,
-                    type : 'text/javascript'
-                }).appendTo($body);
-
-                loadedJavaScript[js.url] = $.extend(true, {}, js, {
-                    tag : $tag,
-                    local : false
-                });
+                var scriptTag = document.createElement('script');
+                document.body.appendChild(scriptTag);
+                scriptTag.onload = function() {
+                    execute(js.url, 'false'); // dummy js but mark as loaded
+                };
+                scriptTag.src = js.url;
+                enqueued = true;
+                queue.push(js.url);
 
                 return true; // continue
             }
