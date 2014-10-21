@@ -433,6 +433,11 @@
                 if (options.format === 'html') {
                     // HTML response
                     response.$content = $($.trim(data));
+                    
+                    var $title = response.$content.find('title');
+                    if ($title.length) {
+                        response.title = $title.text();
+                    }
 
                     // parse the added CSS files
                     selectAll(response.$content, 'link[rel="stylesheet"]').each(function() {
