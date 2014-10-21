@@ -433,6 +433,11 @@
                 if (options.format === 'html') {
                     // HTML response
                     response.$content = $($.trim(data));
+                    
+                    var $title = response.$content.find('title');
+                    if ($title.length) {
+                        response.title = $title.text();
+                    }
 
                     // parse the added CSS files
                     selectAll(response.$content, 'link[rel="stylesheet"]').each(function() {
@@ -525,6 +530,8 @@
                 /*
                  * INSERT CONTENT
                  */
+                unloadJavaScriptModules();
+                
                 if (options.insert === 'append') {
                     // append to target
                     $target.append(response.$content);
@@ -547,13 +554,19 @@
                 // load the attached CSS files
                 loadCss(response.css);
 
+                var onSucess=function(){
+                    // trigger success event
+                    trigger($target, 'njax:success', [response, data, url, options, xhr, status], options.success);
+                };
+
                 // unload previous modules
                 // and load the attached JS files
                 if (!options.noScripts) {
-                    unloadJavaScriptModules();
-                    loadJavaScript(response.js);
+                    loadJavaScript(response.js,onSucess);
+                }else{
+                    onSucess();
                 }
-                
+
 
                 // track the pageview in Google Analytics
                 if (window._gaq !== undefined) {
@@ -564,9 +577,6 @@
                 if (options.scrollToTarget) {
                     animateIntoView($target, options.scrollSpeed, options.scrollToTarget);
                 }
-
-                // trigger success event
-                trigger($target, 'njax:success', [response, data, url, options, xhr, status], options.success);
 
                 // store this request params so we will be able to reload the page using njax
                 last = {
@@ -672,8 +682,9 @@
      * 
      * @param  {Array} files Array of JavaScript files.
      */
-    loadJavaScript = function(files) {
+    loadJavaScript = function(files,fn) {
         var queue = [],
+            enqueued=false,
             execute = function(url, code) {
                 // execute this code only if it is first in the queue (FIFO)
                 if ($.inArray(url, queue) === 0) {
@@ -703,6 +714,9 @@
                         execute(url, code);
                     }, 50);
                 }
+                if (!queue.length){ //empty queue means that we've finished
+                    fn.apply(this);
+                }
             };
 
         $.each(files, function(i, js) {
@@ -714,16 +728,14 @@
                     return true; // continue
                 }
 
-                // load it by simply adding a script tag to the page
-                var $tag = $('<script />', {
-                    src : js.url,
-                    type : 'text/javascript'
-                }).appendTo($body);
-
-                loadedJavaScript[js.url] = $.extend(true, {}, js, {
-                    tag : $tag,
-                    local : false
-                });
+                var scriptTag = document.createElement('script');
+                document.body.appendChild(scriptTag);
+                scriptTag.onload = function() {
+                    execute(js.url, 'false'); // dummy js but mark as loaded
+                };
+                scriptTag.src = js.url;
+                enqueued = true;
+                queue.push(js.url);
 
                 return true; // continue
             }
@@ -742,6 +754,7 @@
                 return true; // continue
             }
 
+            enqueued=true;
             // parse files that haven't been loaded yet
             queue.push(js.url);
             $.ajax({
@@ -755,6 +768,10 @@
                 }
             });
         });
+
+        if (!enqueued){ //no jobs was enqueued, we are done here
+            fn.apply(this);
+        }
     },
 
     /**
