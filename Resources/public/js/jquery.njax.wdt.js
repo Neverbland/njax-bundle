@@ -1,3 +1,4 @@
+/*global jQuery*/
 /**
  * Handles injecting of the Web Debug Toolbar in Symfony2 dev environment for NJAX page loads.
  * 
@@ -6,7 +7,7 @@
  * @license MIT
  */
 (function($, undefined) {
-    "use strict";
+    'use strict';
 
     $(function() {
         $('body').on('njax:success.wdt', function(ev, response, raw) {
