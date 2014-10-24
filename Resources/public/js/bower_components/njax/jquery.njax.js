@@ -682,10 +682,13 @@
      * If it's a local file then it loads it if it wasn't previously loaded.
      * 
      * @param  {Array} files Array of JavaScript files.
+     * @param  {Function} callback [optional] Callback to execute when all files have been loaded.
      */
-    loadJavaScript = function(files,fn) {
+    loadJavaScript = function(files, callback) {
+        callback = callback || $.noop;
+
         var queue = [],
-            enqueued=false,
+            enqueued = false,
             execute = function(url, code) {
                 // execute this code only if it is first in the queue (FIFO)
                 if ($.inArray(url, queue) === 0) {
@@ -715,8 +718,8 @@
                         execute(url, code);
                     }, 50);
                 }
-                if (!queue.length){ //empty queue means that we've finished
-                    fn.apply(this);
+                if (!queue.length) { //empty queue means that we've finished
+                    callback.apply(this);
                 }
             };
 
@@ -724,8 +727,10 @@
 
             // handle script from external source
             if (!isLocalUrl(js.url)) {
-                // if already loaded then ignore
+                // if already loaded then potentially load any modules in that file
+                // and go to the next one
                 if (loadedJavaScript[js.url] !== undefined) {
+                    loadJavaScriptModulesFromUrl(js.url);
                     return true; // continue
                 }
 
@@ -741,17 +746,10 @@
                 return true; // continue
             }
 
-            // handle local script that was already loaded
+            // handle modules in local scripts that have already been loaded previously
+            // scripts with no modules aren't re-executed
             if (loadedJavaScript[js.url] !== undefined) {
-                // but we're only taking care of js modules here
-                // if there was no module in the file then it's already been executed, so don't execute it again
-                if (javaScriptModules[js.url] !== undefined) {
-                    $.each(javaScriptModules[js.url], function(i, module) {
-                        currentJavaScriptModules.push(module);
-                        module.load();
-                    });
-                }
-
+                loadJavaScriptModulesFromUrl(js.url);
                 return true; // continue
             }
 
@@ -772,8 +770,32 @@
         });
 
         if (!enqueued) { //no jobs were enqueued, we are done here
-            fn.apply(this);
+            callback.apply(this);
         }
+    },
+
+    /**
+     * Load JavaScript modules previously registered in the file from the given URL.
+     *
+     * Returns number of modules loaded.
+     * 
+     * @param  {String} url JavaScript file URL.
+     * @return {Number}
+     */
+    loadJavaScriptModulesFromUrl = function(url) {
+        if (javaScriptModules[url] === undefined) {
+            return 0;
+        }
+
+        var loaded = 0;
+
+        $.each(javaScriptModules[url], function(i, module) {
+            currentJavaScriptModules.push(module);
+            module.load();
+            loaded++;
+        });
+
+        return loaded;
     },
 
     /**
@@ -800,6 +822,21 @@
             unload : typeof onUnloadFn === 'function' ? onUnloadFn : $.noop
         };
 
+        var guessedUrl = false;
+
+        // try to figure out current javascript url if it's not set
+        // this only happens on full page load
+        if (!currentJavaScriptUrl) {
+            // so when script tags are loaded in an order the DOM after that script does not exist yet (I think.... fingers crossed)
+            // therefore if we select last known script tag on the page, it will be the script tag of currently parsed JS
+            // but it also requires `$.njax()` calls to not be wrapped in document.ready callbacks, otherwise shit will break (badly?)
+            var $lastScript = $('script[src]').last();
+            if ($lastScript.length) {
+                currentJavaScriptUrl = $lastScript.attr('src');
+                guessedUrl = true;
+            }
+        }
+
         // and if we can read the URL from which this module is executed
         // then make sure it's assigned to it
         if (currentJavaScriptUrl) {
@@ -808,6 +845,11 @@
             }
 
             javaScriptModules[currentJavaScriptUrl].push(module);
+        }
+
+        // cleanup after guessing
+        if (guessedUrl) {
+            currentJavaScriptUrl = null;
         }
 
         // register it in currently running modules
@@ -1149,14 +1191,12 @@
 
             // get initially loaded JavaScript files
             $('script[src]').each(function() {
-                var $tag = $(this),
-                    url = $tag.attr('src');
+                var url = $(this).attr('src');
 
-                if (url) {
+                if (url && loadedJavaScript[url] === undefined) {
                     loadedJavaScript[url] = {
                         url : url,
-                        local : isLocalUrl(url),
-                        tag : $tag
+                        local : isLocalUrl(url)
                     };
                 }
             });
