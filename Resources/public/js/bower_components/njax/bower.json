@@ -1,0 +1,9 @@
+{
+  "name": "njax",
+  "main": "jquery.njax.min.js",
+  "ignore": [
+    ".gitignore",
+    "gulpfile.js",
+    "package.json"
+  ]
+}

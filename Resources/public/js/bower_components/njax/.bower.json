@@ -1,0 +1,20 @@
+{
+  "name": "njax",
+  "main": "jquery.njax.min.js",
+  "ignore": [
+    ".gitignore",
+    "gulpfile.js",
+    "package.json"
+  ],
+  "homepage": "https://github.com/Neverbland/njax",
+  "version": "0.9.1",
+  "_release": "0.9.1",
+  "_resolution": {
+    "type": "version",
+    "tag": "0.9.1",
+    "commit": "8a7b63d3d0700afb62ceff25aa2ed468c5504368"
+  },
+  "_source": "git://github.com/Neverbland/njax.git",
+  "_target": "~0.9.0",
+  "_originalSource": "njax"
+}
