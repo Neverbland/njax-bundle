@@ -1,0 +1,8 @@
+{
+  "name": "NeverblandNjaxBundle",
+  "dependencies": {},
+  "devDependencies": {
+    "gulp-bower": "^0.0.6",
+    "gulp": "^3.8.9"
+  }
+}

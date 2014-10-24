@@ -11,7 +11,7 @@
  * Very similar, and in fact greatly based on PJAX <https://github.com/defunkt/jquery-pjax>
  * with some added functionality.
  * 
- * @author Michał Dudek <michal@michaldudek.pl>
+ * @author Michał Dudek <michal@neverbland.com>
  * @copyright Copyright (c) 2013, Neverbland <http://www.neverbland.com>
  * @license MIT
  */
@@ -19,7 +19,7 @@
 /*global jQuery*/
 
 (function($, window, document, undefined) {
-    "use strict";
+    'use strict';
 
     /***********************************************
      * NJAX PRIVATE METHODS AND VARIABLES
@@ -434,7 +434,7 @@
                     // HTML response
                     response.$content = $($.trim(data));
                     
-                    var $title = response.$content.find('title');
+                    var $title = selectAll(response.$content, 'title');
                     if ($title.length) {
                         response.title = $title.text();
                     }
@@ -462,13 +462,14 @@
                         var $tag = $(this),
                             url = $tag.attr('src');
 
-                        // only take care of local scripts
-                        if (isLocalUrl(url)) {
-                            response.js.push({
-                                url : url
-                            });
-                            $tag.remove();
+                        if (!url) {
+                            return true; // continue
                         }
+
+                        response.js.push({
+                            url : url
+                        });
+                        $tag.remove();
                     });
                 
                 } else {
@@ -681,10 +682,13 @@
      * If it's a local file then it loads it if it wasn't previously loaded.
      * 
      * @param  {Array} files Array of JavaScript files.
+     * @param  {Function} callback [optional] Callback to execute when all files have been loaded.
      */
-    loadJavaScript = function(files,fn) {
+    loadJavaScript = function(files, callback) {
+        callback = callback || $.noop;
+
         var queue = [],
-            enqueued=false,
+            enqueued = false,
             execute = function(url, code) {
                 // execute this code only if it is first in the queue (FIFO)
                 if ($.inArray(url, queue) === 0) {
@@ -714,8 +718,8 @@
                         execute(url, code);
                     }, 50);
                 }
-                if (!queue.length){ //empty queue means that we've finished
-                    fn.apply(this);
+                if (!queue.length) { //empty queue means that we've finished
+                    callback.apply(this);
                 }
             };
 
@@ -723,8 +727,10 @@
 
             // handle script from external source
             if (!isLocalUrl(js.url)) {
-                // if already loaded then ignore
+                // if already loaded then potentially load any modules in that file
+                // and go to the next one
                 if (loadedJavaScript[js.url] !== undefined) {
+                    loadJavaScriptModulesFromUrl(js.url);
                     return true; // continue
                 }
 
@@ -740,21 +746,15 @@
                 return true; // continue
             }
 
-            // handle local script that was already loaded
+            // handle modules in local scripts that have already been loaded previously
+            // scripts with no modules aren't re-executed
             if (loadedJavaScript[js.url] !== undefined) {
-                // but we're only taking care of js modules here
-                // if there was no module in the file then it's already been executed, so don't execute it again
-                if (javaScriptModules[js.url] !== undefined) {
-                    $.each(javaScriptModules[js.url], function(i, module) {
-                        currentJavaScriptModules.push(module);
-                        module.load();
-                    });
-                }
-
+                loadJavaScriptModulesFromUrl(js.url);
                 return true; // continue
             }
 
-            enqueued=true;
+            enqueued = true;
+
             // parse files that haven't been loaded yet
             queue.push(js.url);
             $.ajax({
@@ -769,9 +769,33 @@
             });
         });
 
-        if (!enqueued){ //no jobs was enqueued, we are done here
-            fn.apply(this);
+        if (!enqueued) { //no jobs were enqueued, we are done here
+            callback.apply(this);
         }
+    },
+
+    /**
+     * Load JavaScript modules previously registered in the file from the given URL.
+     *
+     * Returns number of modules loaded.
+     * 
+     * @param  {String} url JavaScript file URL.
+     * @return {Number}
+     */
+    loadJavaScriptModulesFromUrl = function(url) {
+        if (javaScriptModules[url] === undefined) {
+            return 0;
+        }
+
+        var loaded = 0;
+
+        $.each(javaScriptModules[url], function(i, module) {
+            currentJavaScriptModules.push(module);
+            module.load();
+            loaded++;
+        });
+
+        return loaded;
     },
 
     /**
@@ -798,6 +822,21 @@
             unload : typeof onUnloadFn === 'function' ? onUnloadFn : $.noop
         };
 
+        var guessedUrl = false;
+
+        // try to figure out current javascript url if it's not set
+        // this only happens on full page load
+        if (!currentJavaScriptUrl) {
+            // so when script tags are loaded in an order the DOM after that script does not exist yet (I think.... fingers crossed)
+            // therefore if we select last known script tag on the page, it will be the script tag of currently parsed JS
+            // but it also requires `$.njax()` calls to not be wrapped in document.ready callbacks, otherwise shit will break (badly?)
+            var $lastScript = $('script[src]').last();
+            if ($lastScript.length) {
+                currentJavaScriptUrl = $lastScript.attr('src');
+                guessedUrl = true;
+            }
+        }
+
         // and if we can read the URL from which this module is executed
         // then make sure it's assigned to it
         if (currentJavaScriptUrl) {
@@ -806,6 +845,11 @@
             }
 
             javaScriptModules[currentJavaScriptUrl].push(module);
+        }
+
+        // cleanup after guessing
+        if (guessedUrl) {
+            currentJavaScriptUrl = null;
         }
 
         // register it in currently running modules
@@ -1009,7 +1053,7 @@
      */
     selectAll = function($el, selector) {
         var $selected = $el.find(selector);
-        $selected = $selected.add($selected.filter(selector));
+        $selected = $selected.add($el.filter(selector));
         return $selected;
     },
 
@@ -1040,7 +1084,7 @@
     // register as a jQuery function
     $.njax = function() {
         if (!arguments.length) {
-            throw new Error("$.njax() requires at least one argument!");
+            throw new Error('$.njax() requires at least one argument!');
         }
 
         // reroute to appropriate functions based on types of arguments
@@ -1063,11 +1107,11 @@
         var $el = $(this);
 
         if (!$el.is('a[href]')) {
-            throw new TypeError("$().njax() can only be called on 'a' elements that have a href attribute.");
+            throw new TypeError('$().njax() can only be called on "a" elements that have a href attribute.');
         }
 
-        if (typeof ev !== "object") {
-            throw new TypeError("$().njax() requires the original event (usually click) to be passed as first argument.");
+        if (typeof ev !== 'object') {
+            throw new TypeError('$().njax() requires the original event (usually click) to be passed as first argument.');
         }
 
         // if not njax event then ignore
@@ -1128,81 +1172,85 @@
     // but only if njax is supported
     if (supported) {
 
-        // set the state for the current (initial) page load
-        storeCurrentState();
+        // defer execution after page is fully loaded,
+        // as we don't know where NJAX is gonna be inserted
+        $(function() {
 
-        // get initially loaded CSS files
-        $('link[rel="stylesheet"]').each(function() {
-            var $tag = $(this),
-                url = $tag.attr('href');
+            // set the state for the current (initial) page load
+            storeCurrentState();
 
-            if (url) {
-                loadedCss[url] = $tag;
-            }
-        });
+            // get initially loaded CSS files
+            $('link[rel="stylesheet"]').each(function() {
+                var $tag = $(this),
+                    url = $tag.attr('href');
 
-        // get initially loaded JavaScript files
-        $('script[src]').each(function() {
-            var $tag = $(this),
-                url = $tag.attr('src');
-
-            if (url) {
-                loadedJavaScript[url] = {
-                    url : url,
-                    local : isLocalUrl(url),
-                    tag : $tag
-                };
-            }
-        });
-
-        /***********************************************
-         * REGISTER LISTENERS
-         ***********************************************/
-        /**
-         * Register click listener for anchor elements with data-njax attribute.
-         */
-        $body.on('click', 'a[data-njax]', function(ev) {
-            return $(this).njax(ev);
-        });
-
-        /**
-         * Register popstate listener for handling of history navigation (back/forward buttons).
-         *
-         * @triggers njax:history
-         */
-        $win.on('popstate.njax', function(ev) {
-            // if silent mode then ignore this
-            if (silent) {
-                return;
-            }
-
-            var newState = ev.originalEvent.state,
-                direction = parseInt(currentState.id, 10) <= parseInt(newState.id, 10) ? 'forward' : 'back',
-                target = direction === 'back' ? newState.target : currentState.target,
-                $target = $(target).eq(0);
-
-            // if there is no such target on page then do a normal page load
-            if (!supported || !$target.length) {
-                window.location = newState.url;
-                return false;
-            }
-
-            // trigger history event
-            if (trigger($target, 'njax:history', [direction, newState])) {
-                return false;
-            }
-
-            currentState = newState;
-
-            // make njax request for this page
-            request(newState.url, target, {
-                pushState : false,
-                partial : $.njax.partialForTarget(target),
-                success : function() {
-                    // also update scroll position like a browser would - restore on back, top on forward
-                    $win.scrollTop(direction === 'back' ? newState.scrollTop : 0);
+                if (url) {
+                    loadedCss[url] = $tag;
                 }
             });
+
+            // get initially loaded JavaScript files
+            $('script[src]').each(function() {
+                var url = $(this).attr('src');
+
+                if (url && loadedJavaScript[url] === undefined) {
+                    loadedJavaScript[url] = {
+                        url : url,
+                        local : isLocalUrl(url)
+                    };
+                }
+            });
+
+            /***********************************************
+             * REGISTER LISTENERS
+             ***********************************************/
+            /**
+             * Register click listener for anchor elements with data-njax attribute.
+             */
+            $body.on('click', 'a[data-njax]', function(ev) {
+                return $(this).njax(ev);
+            });
+
+            /**
+             * Register popstate listener for handling of history navigation (back/forward buttons).
+             *
+             * @triggers njax:history
+             */
+            $win.on('popstate.njax', function(ev) {
+                // if silent mode then ignore this
+                if (silent) {
+                    return;
+                }
+
+                var newState = ev.originalEvent.state,
+                    direction = parseInt(currentState.id, 10) <= parseInt(newState.id, 10) ? 'forward' : 'back',
+                    target = direction === 'back' ? newState.target : currentState.target,
+                    $target = $(target).eq(0);
+
+                // if there is no such target on page then do a normal page load
+                if (!supported || !$target.length) {
+                    window.location = newState.url;
+                    return false;
+                }
+
+                // trigger history event
+                if (trigger($target, 'njax:history', [direction, newState])) {
+                    return false;
+                }
+
+                currentState = newState;
+
+                // make njax request for this page
+                request(newState.url, target, {
+                    pushState : false,
+                    partial : $.njax.partialForTarget(target),
+                    success : function() {
+                        // also update scroll position like a browser would - restore on back, top on forward
+                        $win.scrollTop(direction === 'back' ? newState.scrollTop : 0);
+                    }
+                });
+            });
+
         });
 
     }
