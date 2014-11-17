@@ -150,8 +150,8 @@ class Njax
                 }
             }
 
-            // make sure content is utf8
-            $json['content'] = utf8_encode($json['content']);
+            // make sure content is utf8 (encode only if its not)
+            $json['content'] = !preg_match('//u', $json['content']) ? utf8_encode($json['content']) : $json['content'];
             $jsonString = !$response->headers->has('X-Partial') ? json_encode($json) : trim(json_encode($json), '"');
             $jsonString = $this->parseEsi($jsonString, $esiEncoded);
 
