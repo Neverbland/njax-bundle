@@ -2,6 +2,6 @@
   "name": "NeverblandNjaxBundle",
   "license": "MIT",
   "dependencies": {
-    "njax": "~0.9.0"
+    "njax": "~0.9"
   }
 }
