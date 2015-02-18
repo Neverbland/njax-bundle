@@ -10,7 +10,7 @@
  *
  * Very similar, and in fact greatly based on PJAX <https://github.com/defunkt/jquery-pjax>
  * with some added functionality.
- * 
+ *
  * @author Michał Dudek <michal@neverbland.com>
  * @copyright Copyright (c) 2013, Neverbland <http://www.neverbland.com>
  * @license MIT
@@ -32,29 +32,29 @@
      *
      * Can be accessed publicly by $.njax.defaults
      * e.g. $.njax.defaults.target = '#content-wrap'
-     * 
+     *
      * @type {Object}
      */
     defaults = {
         /**
          * Should a new state be pushed? Usually yes, but not for history navigation.
-         * 
+         *
          * @type {Boolean}
          */
         pushState   : true,
 
         /**
          * Target where the received content will be inserted.
-         * 
+         *
          * @type {String} CSS selector.
          */
         target      : '#content',
 
         /**
          * After loading the new page should it scroll to top of the target?
-         * 
+         *
          * If {Number} given then it will be treated as offset/margin to scrolling.
-         * 
+         *
          * @type {Boolean|Number}
          */
         scrollToTarget : false,
@@ -68,76 +68,76 @@
 
         /**
          * Method of inserting the new content.
-         * 
+         *
          * One of the following : 'insert' (default), 'prepend', 'append', 'replace'.
-         * 
+         *
          * @type {String}
          */
         insert      : 'insert',
 
         /**
          * If set to true then all appended javascripts will be ignored and no njax modules executed.
-         * 
+         *
          * @type {Boolean}
          */
         noScripts   : false,
 
         /**
          * Format of the response.
-         * 
+         *
          * @type {String} Either 'html' or 'json'.
          */
         format      : 'json',
 
         /**
          * Fragment of the received page that should be inserted into the page.
-         * 
+         *
          * @type {String} CSS selector.
          */
         fragment    : null,
 
         /**
          * Similar to fragment but instead of inserting a single fragment it will insert the specific elements targeted by the given selector.
-         * 
+         *
          * So for example if you want to append new items to a list specify a selector for them.
-         * 
+         *
          * Takes precedence before 'fragment'.
-         * 
+         *
          * @type {String} CSS selector.
          */
         elements   : null,
 
         /**
          * Filter response manually with a callback function.
-         * 
+         *
          * @type {Function}
          */
         filterResponse : null,
 
         /**
          * Name of the partial that the server should render.
-         * 
+         *
          * @type {String}
          */
         partial     : null,
 
         /**
          * Title of the page - the HTML title will be changed upon receiving successful response from the server.
-         * 
+         *
          * @type {String}
          */
         title       : document.title,
 
         /**
          * Timeout (in ms) for the request.
-         * 
+         *
          * @type {Number}
          */
         timeoutTime : 60000,
 
         /**
          * Callback called when starting njax request.
-         * 
+         *
          * @param  {Event} ev  Start event.
          */
         start     : function(ev) {
@@ -146,7 +146,7 @@
 
         /**
          * Callback called when njax request has been finished and fully handled.
-         * 
+         *
          * @param  {Event} ev  Start event.
          */
         end    : function(ev) {
@@ -155,7 +155,7 @@
 
         /**
          * Callback called when njax request responded with an error.
-         * 
+         *
          * @param  {String} url      URL of the request.
          * @param  {Object} options  Options for the request.
          * @param  {jqXHR} xhr       jQuery XHR object.
@@ -168,9 +168,9 @@
 
         /**
          * Callback called when njax request was successful.
-         * 
+         *
          * NOTE: This doesn't override the njax behavior - inserting the content, changing the page title, etc, are still handled by internal code.
-         * 
+         *
          * @param  {Object} data     Data returned from the server.
          * @param  {Object} response Parsed response data from the server (including content, page title, partial).
          * @param  {String} url      URL of the request.
@@ -184,7 +184,7 @@
 
         /**
          * Callback called when the njax request timed out.
-         * 
+         *
          * @param  {String} url      URL of the request.
          * @param  {Object} options  Options for the request.
          * @param  {jqXHR} xhr       jQuery XHR object.
@@ -197,42 +197,42 @@
 
     /**
      * Window object wrapped in jQuery
-     * 
+     *
      * @type {jQuery}
      */
     $win = $(window),
 
     /**
      * Document object wrapped in jQuery
-     * 
+     *
      * @type {jQuery}
      */
     //$doc = $(document),
-    
+
     /**
      * Head element wrapped in jQuery.
-     * 
+     *
      * @type {jQuery}
      */
     $head = $('head'),
 
     /**
      * Body element wrapped in jQuery
-     * 
+     *
      * @type {jQuery}
      */
     $body = $(document.body),
 
     /**
      * Collection of body and html elements, used by animateIntoView().
-     * 
+     *
      * @type {jQuery}
      */
     $bodyAndHtml = $body.add('html'),
 
     /**
      * Is njax supported by the browser or not?
-     * 
+     *
      * @type {Boolean}
      */
     supported = false,
@@ -241,7 +241,7 @@
      * History manager.
      *
      * Referenced here for better minification, but also possibility of later injecting History.js.
-     * 
+     *
      * @type {history}
      */
     history = window.history,
@@ -276,35 +276,35 @@
 
     /**
      * Cache with various info about states.
-     * 
+     *
      * @type {Object}
      */
     cache = {},
 
     /**
      * Stores information about loaded CSS files.
-     * 
+     *
      * @type {Object}
      */
     loadedCss = {},
 
     /**
      * Stores information about loaded JavaScript files.
-     * 
+     *
      * @type {Object}
      */
     loadedJavaScript = {},
 
     /**
      * All registered JavaScript modules, by js file URL.
-     * 
+     *
      * @type {Object}
      */
     javaScriptModules = {},
 
     /**
      * List of currently loaded JavaScript modules.
-     * 
+     *
      * @type {Array}
      */
     currentJavaScriptModules = [],
@@ -313,14 +313,14 @@
      * URL of a currently executed/eval'd script.
      *
      * Used by JavaScript management functions to properly assign modules to their owning files.
-     * 
+     *
      * @type {String}
      */
     currentJavaScriptUrl = null,
 
     /**
      * Data about the current state.
-     * 
+     *
      * @type {Object}
      */
     currentState = {
@@ -376,7 +376,7 @@
              *
              * @param {jqXHR} xhr
              * @param {Object} settings
-             * 
+             *
              * @triggers njax:start On target element.
              * @triggers njax:timeout On target element when the request times out.
              */
@@ -433,7 +433,7 @@
                 if (options.format === 'html') {
                     // HTML response
                     response.$content = $($.trim(data));
-                    
+
                     var $title = selectAll(response.$content, 'title');
                     if ($title.length) {
                         response.title = $title.text();
@@ -471,7 +471,7 @@
                         });
                         $tag.remove();
                     });
-                
+
                 } else {
                     // JSON response
                     response.$content = $($.trim(data.content));
@@ -480,7 +480,7 @@
                 }
 
                 /*
-                 * FILTER THE RESPONSE CONTENT 
+                 * FILTER THE RESPONSE CONTENT
                  * based on given options
                  */
                 if (typeof options.filterResponse === 'function') {
@@ -532,7 +532,7 @@
                  * INSERT CONTENT
                  */
                 unloadJavaScriptModules();
-                
+
                 if (options.insert === 'append') {
                     // append to target
                     $target.append(response.$content);
@@ -592,7 +592,7 @@
 
             /**
              * Executed when the njax request responds with an error.
-             * 
+             *
              * @param  {jqXHR} xhr
              * @param  {Number} status HTTP response code.
              * @param  {String} error Error message / type.
@@ -655,7 +655,7 @@
 
     /**
      * Adds the passed CSS files into the page.
-     * 
+     *
      * @param  {Array} files Array of CSS files.
      */
     loadCss = function(files) {
@@ -680,7 +680,7 @@
      * If it's an external file then it loads it by adding a script tag to the page's body.
      * If it's a local file that was previously loaded and registered a module then it executes that module.
      * If it's a local file then it loads it if it wasn't previously loaded.
-     * 
+     *
      * @param  {Array} files Array of JavaScript files.
      * @param  {Function} callback [optional] Callback to execute when all files have been loaded.
      */
@@ -778,7 +778,7 @@
      * Load JavaScript modules previously registered in the file from the given URL.
      *
      * Returns number of modules loaded.
-     * 
+     *
      * @param  {String} url JavaScript file URL.
      * @return {Number}
      */
@@ -812,7 +812,7 @@
 
     /**
      * Registers JavaScript module.
-     * 
+     *
      * @param  {Function} onLoadFn [optional]
      * @param  {Function} onUnloadFn [optional]
      */
@@ -864,7 +864,7 @@
     reload = function() {
         // if no last request stored then simply reload the page
         if (!last) {
-            window.location.reload(); 
+            window.location.reload();
         }
 
         request(last.url, last.target, last.options);
@@ -872,7 +872,7 @@
 
     /**
      * Wrapper function around history.pushState() that retrieves the new state and stores it in currentState as well as returning it.
-     * 
+     *
      * @param  {String} url   URL to be displayed in the browser's address bar.
      * @param  {String} title Page title that you may want to set.
      * @param  {Object} data [optional] Any additional state data.
@@ -899,7 +899,7 @@
 
     /**
      * Updates the current state info in history.
-     * 
+     *
      * @param  {Object} data [optional] Any additional state data.
      */
     storeCurrentState = function(data) {
@@ -918,7 +918,7 @@
 
     /**
      * Triggers a custom event on the given element with attached data.
-     * 
+     *
      * @param  {jQuery}   $el  jQuery Element.
      * @param  {String}   type Event type/name.
      * @param  {Array}    args Arguments passed to event listeners.
@@ -944,13 +944,13 @@
 
     /**
      * Checks if the event (usually a click event) is a qualified njax event.
-     * 
+     *
      * ie. if the njax-related code should be executed. This is to help simulate native browser behavior.
      * It checks the following:
      * - if the modifier button (cmd, ctrl, alt, shift) was pressed during the event
      * - if the protocol and host of the link match the current
      * - if the link isn't only a hash change
-     * 
+     *
      * @param  {Event}  ev
      * @return {Boolean} If true then you should proceed with executing njax related code.
      */
@@ -971,7 +971,7 @@
         if (link.hash && link.href.replace(link.hash, '') === window.location.href.replace(window.location.hash, '')) {
             return false;
         }
-        
+
         // ignore empty hash "foo.html#"
         if (link.href === '#' || link.href === window.location.href + '#') {
             return false;
@@ -982,7 +982,7 @@
 
     /**
      * Checks if the given URL is local to the page (served from the same server with the same protocol)
-     * 
+     *
      * @param  {String}  url
      * @return {Boolean}
      */
@@ -993,7 +993,7 @@
 
     /**
      * Parses the given URL to more easily accessible object of URL parts.
-     * 
+     *
      * @param  {String} url
      * @return {Object}
      */
@@ -1005,7 +1005,7 @@
 
     /**
      * Creates a unique ID for new state.
-     * 
+     *
      * @return {String}
      */
     createId = function() {
@@ -1021,7 +1021,7 @@
 
     /**
      * Returns global state that will be attached to every state.
-     * 
+     *
      * @return {Object}
      */
     getGlobalState = function() {
@@ -1034,7 +1034,7 @@
      * Should be overwritten by user.
      *
      * By default it returns the default partial.
-     * 
+     *
      * @param  {String} target Target for which a request is being made.
      * @return {String}
      */
@@ -1046,7 +1046,7 @@
      * Selects all elements matching the selector.
      *
      * It not only does .find() but also .filter().
-     * 
+     *
      * @param  {jQuery} $el      Element to select from.
      * @param  {String} selector CSS selector.
      * @return {jQuery}
@@ -1091,7 +1091,7 @@
         if (typeof arguments[0] === 'function') {
             // registering a js module
             registerJavaScript.apply(window, arguments);
-            
+
         } else if (typeof arguments[0] === 'string') {
             // loading
             request.apply(window, arguments);
@@ -1218,7 +1218,7 @@
              */
             $win.on('popstate.njax', function(ev) {
                 // if silent mode then ignore this
-                if (silent) {
+                if (silent || ev.originalEvent.state === null) {
                     return;
                 }
 
